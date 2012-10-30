@@ -26,7 +26,15 @@ if(!$network) {
 my $dazeus = DaZeus->connect($socket);
 $dazeus->subscribe("PRIVMSG", \&message);
 my $wow_api = WoW::Armory::API->new(Region => 'eu', Locale => 'en_GB');
-while($dazeus->handleEvents()){}
+poll_feeds();
+my $last_poll = time();
+while(1) {
+    while($dazeus->handleEvent(5)) {}
+    if(time() - $last_poll > 300) {
+        poll_feeds();
+        $last_poll = time();
+    }
+}
 die "Quit!";
 
 # Message handler subroutine
@@ -56,8 +64,15 @@ sub message
         elsif(@cmd == 2 && $cmd[1] eq "list"){
             list_chars($chan, $nick);
         }
+        elsif(@cmd == 2 && $cmd[1] eq "subscribe"){
+            toggle_feeds($chan, "on");
+        }
+        elsif(@cmd == 2 && $cmd[1] eq "unsubscribe"){
+            toggle_feeds($chan, "off");
+        }
         elsif(@cmd == 2 && $cmd[1] eq "queryfeeds"){
-            query_feeds($chan);
+            my $cmap = {$chan => 1};
+            query_feeds($cmap);
         }
         else {
             print_help("min", $chan, @cmd);
@@ -89,9 +104,17 @@ sub print_help
             $dazeus->message($network, $chan, "list : List all my registered characters.");
             return;
         }
+        if($params[2] eq "subscribe"){
+            $dazeus->message($network, $chan, "subscribe : Subscribes the current channel to feed updates.");
+            return;
+        }
+        if($params[2] eq "unsubscribe"){
+            $dazeus->message($network, $chan, "unsubscribe : Unsubscribes the current channel from feed updates.");
+            return;
+        }
     }
     if($full eq "full") {
-        $dazeus->message($network, $chan, "Possible commands are help, register, unregister, query and list. Type }help <command> for more info about a certain command.");
+        $dazeus->message($network, $chan, "Possible commands are help, register, unregister, subscribe, unsubscribe, query and list. Type }help <command> for more info about a certain command.");
     }
     else {
         $dazeus->message($network, $chan, "Type }wow help for usage info.");
@@ -235,13 +258,22 @@ sub list_chars
     }
 }
 
-# query_feeds(channel)
+# poll_feeds()
+# Poll all registered feeds to all subscribed channels.
+sub poll_feeds
+{
+    my $subs = $dazeus->getProperty("plugins.wow.subscribers");
+    print "Poll feeds.\n";
+    query_feeds($subs);
+}
+
+# query_feeds(channels)
 # Query feeds of all registered characters and displays changes in the
-# given channel.
+# given channels (in the form of a hashmap with channels as keys.).
 sub query_feeds
 {
     my ($chan, undef) = @_;
-    print "Query feeds\n";
+    print "Query feeds to " . Dumper($chan) . "\n";
     
     my $regchars = $dazeus->getProperty("plugins.wow.charlist");
     if(!$regchars) {
@@ -295,28 +327,72 @@ sub query_feeds
     }
 }
 
-# parse_fdfiff(channel, old_timestamp, old_level, new_feed)
+# parse_fdfiff(channels, old_timestamp, old_level, new_feed)
 # Parse difference between last seen and current feed, using the old timestamp
-# and level. Will output all changes to the given chanel.
+# and level. Will output all changes to the given channels (in the form of
+# a hashmap with channels as keys).
 sub parse_fdiff
 {
     my ($chan, $old_timestamp, $old_level, $new_feed) = @_;
     if($old_level != $new_feed->{level}) {
         $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has leveled up to level " . $new_feed->{level} . "! \\o/");
     }
-    foreach(@{$new_feed->{feed}})
+    my $item;
+    foreach $item (@{$new_feed->{feed}})
     {
-        if($_->{timestamp} > $old_timestamp) {
-            if($_->{type} eq "ACHIEVEMENT") {
-                $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $_->{achievement}{title} . "]! \\o/");
+        if($item->{timestamp} > $old_timestamp) {
+            if($item->{type} eq "ACHIEVEMENT") {
+                for(keys %$chan) {
+                    $dazeus->message($network, $_, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $item->{achievement}{title} . "]! \\o/");
+                }
             }
-            elsif($_->{type} eq "LOOT") {
-                my $itemdat = $wow_api->GetItem($_->{itemId});
-                $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has looted " . $itemdat->{name} . "! \\o/");
+            elsif($item->{type} eq "LOOT") {
+                my $itemdat = $wow_api->GetItem($item->{itemId});
+                for(keys %$chan) {
+                    $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has looted " . $itemdat->{name} . "! \\o/");
+                }
             }
-            elsif($_->{type} eq "BOSSKILL") {
-                $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has cleared " . $_->{name} . "! \\o/");
+            elsif($item->{type} eq "BOSSKILL") {
+                for(keys %$chan) {
+                    $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has cleared " . $_->{name} . "! \\o/");
+                }
             }
         }
     }
+}
+
+# toggle_feed(channel, "on"/"off")
+# Subscribe or unsubscribe a channel from feeds.
+sub toggle_feeds
+{
+    my ($chan, $flag) = @_;
+    print "Setting feed subscription for " . $chan . " to " . $flag . "\n";
+    
+    my $subs = $dazeus->getProperty("plugins.wow.subscribers");
+    if(!$subs){
+        $subs = {};
+    }
+    
+    if($flag eq "on"){
+        if(exists($subs->{$chan})){
+            $dazeus->message($network, $chan, "But this channel is already subscribed!");
+            return;
+        }
+        else {
+            $subs->{$chan} = 1;
+            $dazeus->message($network, $chan, "I will subscribe this channel.");
+        }
+    }
+    elsif($flag eq "off"){
+        if(exists($subs->{$chan})){
+            delete $subs->{$chan};
+            $dazeus->message($network, $chan, "I will unsubscribe this channel.");
+        }
+        else {
+            $dazeus->message($network, $chan, "But this channel is not subscribed!");
+            return;
+        }
+    }
+    
+    $dazeus->setProperty("plugins.wow.subscribers", $subs);
 }
