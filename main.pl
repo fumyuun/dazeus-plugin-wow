@@ -235,6 +235,9 @@ sub list_chars
     }
 }
 
+# query_feeds(channel)
+# Query feeds of all registered characters and displays changes in the
+# given channel.
 sub query_feeds
 {
     my ($chan, undef) = @_;
@@ -263,23 +266,28 @@ sub query_feeds
             print "Query failed: " . $new_feed->{reason};
             next;
         }
+        if(!$new_feed->{lastModified} || !$new_feed->{level}) {
+            print "Query failed?\n";
+            next;
+        }
         
         print "tnew: " . $new_feed->{lastModified} . " ";
         
-        # Triggers crash when property exists...
-        my $old_feed = $dazeus->getProperty("plugins.wow.charfeed." . $_);
-        if(!$old_feed) {
+        my $old_timestamp = $dazeus->getProperty("plugins.wow.charfeed." . $_ . ".timestamp");
+        my $old_level = $dazeus->getProperty("plugins.wow.charfeed." . $_ . ".level");
+        if(!$old_timestamp || !$old_level) {
             print "store.\n";
-            $dazeus->setProperty("plugins.wow.charfeed." . $_, $new_feed);
+            $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".timestamp", $new_feed->{lastModified});
+            $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".level", $new_feed->{level});
             next;
         }
-        print "told: " . $old_feed->{lastModified} . " ";
-        print "parse diff... ";
-        parse_fdiff($chan, $old_feed, $new_feed);
+        print "told: " . $old_timestamp . " ";
         
-        if($old_feed->{lastModified} != $new_feed->{lastModified}) {
+        if($old_timestamp != $new_feed->{lastModified}) {
             print "update.\n";
-            $dazeus->setProperty("plugins.wow.charfeed." . $_, $new_feed);
+            parse_fdiff($chan, $old_timestamp, $old_level, $new_feed);
+            $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".timestamp", $new_feed->{lastModified});
+            $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".level", $new_feed->{lastModified});
         }
         else {
             print "same.\n";
@@ -287,23 +295,27 @@ sub query_feeds
     }
 }
 
+# parse_fdfiff(channel, old_timestamp, old_level, new_feed)
+# Parse difference between last seen and current feed, using the old timestamp
+# and level. Will output all changes to the given chanel.
 sub parse_fdiff
 {
-    my ($chan, $old_feed, $new_feed) = @_;
-    if($old_feed->{level} != $new_feed->{level}) {
+    my ($chan, $old_timestamp, $old_level, $new_feed) = @_;
+    if($old_level != $new_feed->{level}) {
         $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has leveled up to level " . $new_feed->{level} . "! \\o/");
     }
-    foreach(@$new_feed->{feed})
+    foreach(@{$new_feed->{feed}})
     {
-        if($_->{timestamp} > $old_feed->{timestamp}) {
+        if($new_feed->{lastModified} > $old_timestamp) {
             if($_->{type} eq "ACHIEVEMENT") {
                 $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $_->{achievement}{title} . "]! \\o/");
             }
             elsif($_->{type} eq "LOOT") {
-                $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has looted (" . $_->{itemid} . ")! \\o/");
+                my $itemdat = $wow_api->GetItem($_->{itemId});
+                $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has looted " . $itemdat->{name} . "! \\o/");
             }
             elsif($_->{type} eq "BOSSKILL") {
-                $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has cleared " . $_->{name} . ")! \\o/");
+                $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has cleared " . $_->{name} . "! \\o/");
             }
         }
     }
