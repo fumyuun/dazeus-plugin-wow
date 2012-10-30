@@ -306,7 +306,7 @@ sub parse_fdiff
     }
     foreach(@{$new_feed->{feed}})
     {
-        if($new_feed->{lastModified} > $old_timestamp) {
+        if($_->{timestamp} > $old_timestamp) {
             if($_->{type} eq "ACHIEVEMENT") {
                 $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $_->{achievement}{title} . "]! \\o/");
             }
