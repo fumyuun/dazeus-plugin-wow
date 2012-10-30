@@ -56,6 +56,9 @@ sub message
         elsif(@cmd == 2 && $cmd[1] eq "list"){
             list_chars($chan, $nick);
         }
+        elsif(@cmd == 2 && $cmd[1] eq "queryfeeds"){
+            query_feeds($chan);
+        }
         else {
             print_help("min", $chan, @cmd);
         }
@@ -101,8 +104,12 @@ sub query_charinfo
 {
     my ($chan, $realm, $char) = @_;
     print "Query of " . $realm . " - " . $char . "\n";
-    my $char_data = $wow_api->GetCharacter($realm, $char, 'feed');
+    my $char_data = $wow_api->GetCharacter($realm, $char);
     
+    if(!$char_data) {
+        $dazeus->message($network, $chan, "Query failed?");
+        return;
+    }
     if($char_data->{status} && $char_data->{status} eq "nok") {
         $dazeus->message($network, $chan, "Query failed: " . $char_data->{reason});
         return;
@@ -121,6 +128,7 @@ sub register_char
 {
     my ($chan, $nick, $realm, $char) = @_;
     $char = lc $char;
+    $realm = lc $realm;
     
     print "Register attempt " . $realm . " - " . $char . " by " . $nick . ": ";
     
@@ -204,7 +212,7 @@ sub list_chars
 {
     my ($chan, $nick) = @_;
     
-    print "List chars by " . $nick . ": ";
+    print "List chars by " . $nick . ":\n";
     
     my $regchars = $dazeus->getProperty("plugins.wow.charlist");
     if(!$regchars) {
@@ -217,7 +225,7 @@ sub list_chars
     {
         if($regchars->{$_} eq $nick)
         {
-            print $_ . " ";
+            print "\t";
             my @subs = split(/\./, $_);
             if(@subs != 2) {
                 die "Database inconsistency!\n";
@@ -225,5 +233,78 @@ sub list_chars
             query_charinfo($chan, $subs[0], $subs[1]);
         }
     }
-    print "\n";
+}
+
+sub query_feeds
+{
+    my ($chan, undef) = @_;
+    print "Query feeds\n";
+    
+    my $regchars = $dazeus->getProperty("plugins.wow.charlist");
+    if(!$regchars) {
+        return;
+    }
+    
+    for(keys %$regchars)
+    {
+        print "\tQuery " . $_ . ": ";
+        
+        my @subs = split(/\./, $_);
+        if(@subs != 2) {
+            die "Database inconsistency!\n";
+        }
+        
+        my $new_feed = $wow_api->GetCharacter($subs[0], $subs[1], 'feed');
+        if(!$new_feed) {
+            print "Query failed?\n";
+            next;
+        }
+        if($new_feed->{status} && $new_feed->{status} eq "nok") {
+            print "Query failed: " . $new_feed->{reason};
+            next;
+        }
+        
+        print "tnew: " . $new_feed->{lastModified} . " ";
+        
+        # Triggers crash when property exists...
+        my $old_feed = $dazeus->getProperty("plugins.wow.charfeed." . $_);
+        if(!$old_feed) {
+            print "store.\n";
+            $dazeus->setProperty("plugins.wow.charfeed." . $_, $new_feed);
+            next;
+        }
+        print "told: " . $old_feed->{lastModified} . " ";
+        print "parse diff... ";
+        parse_fdiff($chan, $old_feed, $new_feed);
+        
+        if($old_feed->{lastModified} != $new_feed->{lastModified}) {
+            print "update.\n";
+            $dazeus->setProperty("plugins.wow.charfeed." . $_, $new_feed);
+        }
+        else {
+            print "same.\n";
+        }
+    }
+}
+
+sub parse_fdiff
+{
+    my ($chan, $old_feed, $new_feed) = @_;
+    if($old_feed->{level} != $new_feed->{level}) {
+        $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has leveled up to level " . $new_feed->{level} . "! \\o/");
+    }
+    foreach(@$new_feed->{feed})
+    {
+        if($_->{timestamp} > $old_feed->{timestamp}) {
+            if($_->{type} eq "ACHIEVEMENT") {
+                $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $_->{achievement}{title} . "]! \\o/");
+            }
+            elsif($_->{type} eq "LOOT") {
+                $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has looted (" . $_->{itemid} . ")! \\o/");
+            }
+            elsif($_->{type} eq "BOSSKILL") {
+                $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has cleared " . $_->{name} . ")! \\o/");
+            }
+        }
+    }
 }
