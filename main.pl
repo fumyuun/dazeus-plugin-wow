@@ -97,7 +97,7 @@ sub print_help
             return;
         }
         elsif($params[2] eq "query"){
-            $dazeus->message($network, $chan, "query <realm> <character> : Query basic character info. Note that realm name must be lower case and spaces have to be replaced by coloms (-).");
+            $dazeus->message($network, $chan, "query <realm> <character> : Query basic character info. Note that realm name must be lower case and spaces have to be replaced by dashes (-).");
             return;
         }
         elsif($params[2] eq "list"){
