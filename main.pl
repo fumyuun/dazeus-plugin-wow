@@ -64,6 +64,9 @@ sub message
         elsif(@cmd == 2 && $cmd[1] eq "list"){
             list_chars($chan, $nick);
         }
+        elsif(@cmd == 3 && $cmd[1] eq "list"){
+            list_chars($chan, $cmd[2]);
+        }
         elsif(@cmd == 2 && $cmd[1] eq "subscribe"){
             toggle_feeds($chan, "on");
         }
@@ -101,7 +104,7 @@ sub print_help
             return;
         }
         elsif($params[2] eq "list"){
-            $dazeus->message($network, $chan, "list : List all my registered characters.");
+            $dazeus->message($network, $chan, "list [nickname] : List all registered characters of nickname (or yourself if nickname is not given).");
             return;
         }
         if($params[2] eq "subscribe"){
