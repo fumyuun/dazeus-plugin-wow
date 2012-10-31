@@ -244,17 +244,21 @@ sub list_chars
         return;
     }
     
+    my $counter = 0;
     for(keys %$regchars)
     {
-        if($regchars->{$_} eq $nick)
-        {
+        if($regchars->{$_} eq $nick){
             print "\t";
             my @subs = split(/\./, $_);
-            if(@subs != 2) {
+            if(@subs != 2){
                 die "Database inconsistency!\n";
             }
             query_charinfo($chan, $subs[0], $subs[1]);
+            $counter++;
         }
+    }
+    if($counter == 0){
+        $dazeus->message($network, $chan, "But you don't have any registered characters!");
     }
 }
 
