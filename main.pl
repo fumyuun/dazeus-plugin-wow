@@ -323,7 +323,7 @@ sub query_feeds
             print "update.\n";
             parse_fdiff($chan, $old_timestamp, $old_level, $new_feed);
             $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".timestamp", $new_feed->{lastModified});
-            $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".level", $new_feed->{lastModified});
+            $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".level", $new_feed->{level});
         }
         else {
             print "same.\n";
