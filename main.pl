@@ -277,7 +277,7 @@ sub poll_feeds
 sub query_feeds
 {
     my ($chan, undef) = @_;
-    print "Query feeds to " . Dumper($chan) . "\n";
+    print scalar(localtime(time())) . " ** Query feeds to " . Dumper($chan) . "\n";
     
     my $regchars = $dazeus->getProperty("plugins.wow.charlist");
     if(!$regchars) {
