@@ -339,26 +339,28 @@ sub parse_fdiff
 {
     my ($chan, $old_timestamp, $old_level, $new_feed) = @_;
     if($old_level != $new_feed->{level}) {
-        $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has leveled up to level " . $new_feed->{level} . "! \\o/");
+	for my $channel (keys %$chan) {
+        	$dazeus->message($network, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has leveled up to level " . $new_feed->{level} . "! \\o/");
+	}
     }
     my $item;
     foreach $item (@{$new_feed->{feed}})
     {
         if($item->{timestamp} > $old_timestamp) {
             if($item->{type} eq "ACHIEVEMENT") {
-                for(keys %$chan) {
-                    $dazeus->message($network, $_, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $item->{achievement}{title} . "]! \\o/");
+                for my $channel (keys %$chan) {
+                    $dazeus->message($network, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $item->{achievement}{title} . "]! \\o/");
                 }
             }
             elsif($item->{type} eq "LOOT") {
                 my $itemdat = $wow_api->GetItem($item->{itemId});
-                for(keys %$chan) {
-                    $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has looted " . $itemdat->{name} . "! \\o/");
+                for my $channel (keys %$chan) {
+                    $dazeus->message($network, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has looted " . $itemdat->{name} . "! \\o/");
                 }
             }
             elsif($item->{type} eq "BOSSKILL") {
-                for(keys %$chan) {
-                    $dazeus->message($network, $chan, $new_feed->{name} . " (" . $new_feed->{realm} . ") has cleared " . $_->{name} . "! \\o/");
+                for my $channel (keys %$chan) {
+                    $dazeus->message($network, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has cleared " . $item->{name} . "! \\o/");
                 }
             }
         }
