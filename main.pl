@@ -60,6 +60,9 @@ sub message
         elsif(@cmd == 4 && $cmd[1] eq "query"){
             query_charinfo($chan, $cmd[2], $cmd[3]);
         }
+        elsif(@cmd == 4 && $cmd[1] eq "gquery"){
+            query_guildinfo($chan, $cmd[2], $cmd[3]);
+        }
         elsif(@cmd == 4 && $cmd[1] eq "register"){
             register_char($chan, $nick, $cmd[2], $cmd[3]);
         }
@@ -78,8 +81,17 @@ sub message
         elsif(@cmd == 3 && $cmd[1] eq "list"){
             list_chars($chan, $cmd[2]);
         }
+        elsif(@cmd == 2 && $cmd[1] eq "glist"){
+            list_guilds($chan, $nick);
+        }
+        elsif(@cmd == 3 && $cmd[1] eq "glist"){
+            list_guilds($chan, $cmd[2]);
+        }
         elsif(@cmd == 2 && $cmd[1] eq "list-all"){
             list_allchars($chan);
+        }
+        elsif(@cmd == 2 && $cmd[1] eq "glist-all"){
+            list_allguilds($chan);
         }
         elsif(@cmd == 2 && $cmd[1] eq "subscribe"){
             toggle_feeds($chan, "on");
@@ -125,12 +137,24 @@ sub print_help
             $dazeus->message($network, $chan, "query <realm> <character> : Query basic character info. Note that realm name must be lower case and spaces have to be replaced by dashes (-).");
             return;
         }
+        elsif($params[2] eq "gquery"){
+            $dazeus->message($network, $chan, "query <realm> <guild> : Query basic guild info. Note that realm name must be lower case, the guild name is case sensitive and all spaces have to be replaced by dashes (-).");
+            return;
+        }
         elsif($params[2] eq "list"){
             $dazeus->message($network, $chan, "list [nickname] : List all registered characters of nickname (or yourself if nickname is not given).");
             return;
         }
         elsif($params[2] eq "list-all"){
             $dazeus->message($network, $chan, "list-all : List all registered characters.");
+            return;
+        }
+        elsif($params[2] eq "glist"){
+            $dazeus->message($network, $chan, "list [nickname] : List all registered guilds of nickname (or yourself if nickname is not given).");
+            return;
+        }
+        elsif($params[2] eq "glist-all"){
+            $dazeus->message($network, $chan, "glist-all : List all registered guilds.");
             return;
         }
         if($params[2] eq "subscribe"){
@@ -155,6 +179,9 @@ sub print_help
 sub query_charinfo
 {
     my ($chan, $realm, $char) = @_;
+    $char = lc $char;
+    $realm = lc $realm;
+    
     print "Query of " . $realm . " - " . $char . "\n";
     my $char_data = $wow_api->GetCharacter($realm, $char);
     # Querying sometimes mysteriously fails, try again.
@@ -178,6 +205,36 @@ sub query_charinfo
     " - " . @races[$char_data->{race}] . " "
     . @classes[$char_data->{class}] .
     " - (" . $char_data->{realm} . ")");
+}
+
+# query_guildinfo(channel, realm, guild)
+# query and display basic guild info.
+sub query_guildinfo
+{
+    my ($chan, $realm, $guild) = @_;
+    $guild =~ s/-/ /g;
+    $realm = lc $realm;
+    
+    print "Query of guild " . $realm . " - " . $guild . "\n";
+    my $guild_data = $wow_api->GetGuild($realm, $guild);
+    # Querying sometimes mysteriously fails, try again.
+    my $retries;
+    for($retries = 0; !$guild_data && $retries < $MAX_RETRIES; $retries++) {
+        print "Retry (" . $retries . "), ";
+        $guild_data = $wow_api->GetGuild($realm, $guild);
+    }
+    if($retries == $MAX_RETRIES && !$guild_data) {
+        print "Failed...\n";
+        return;
+    }
+    
+    if($guild_data->{status} && $guild_data->{status} eq "nok") {
+        $dazeus->message($network, $chan, "Query failed: " . $guild_data->{reason});
+        return;
+    }
+    
+    $dazeus->message($network, $chan, "[" . $guild_data->{level} . "] "
+    . $guild_data->{name} . " (" . ($guild_data->{side} == 0 ? "A" : "H") . ")");
 }
 
 # register_char(channel, nick, realm, char)
@@ -391,29 +448,63 @@ sub list_chars
     }
 }
 
-# list_allchars(chan)
-# Query and list all registered characters.
-sub list_allchars
+# list_guilds(chan, nick)
+# Query and list all guilds registered to a given nick.
+sub list_guilds
 {
-    my ($chan) = @_;
+    my ($chan, $nick) = @_;
     
-    print "List all chars:\n";
+    print "List guilds by " . $nick . ":\n";
     
-    my $regchars = $dazeus->getProperty("plugins.wow.charlist");
-    if(!$regchars) {
-        $dazeus->message($network, $chan, "But there are no characters registered!");
+    my $regguilds = $dazeus->getProperty("plugins.wow.guildlist");
+    if(!$regguilds) {
+        $dazeus->message($network, $chan, "But there are no guilds registered!");
         print "invalid (no properties)\n";
         return;
     }
     
-    for(keys %$regchars)
+    my $counter = 0;
+    for(keys %$regguilds)
+    {
+        if($regguilds->{$_} eq $nick){
+            print "\t";
+            my @subs = split(/\./, $_);
+            if(@subs != 2){
+                die "Database inconsistency!\n";
+            }
+            query_guildinfo($chan, $subs[0], $subs[1]);
+            $counter++;
+        }
+    }
+    if($counter == 0){
+        $dazeus->message($network, $chan, "But you don't have any registered guilds!");
+    }
+}
+
+
+# list_allguilds(chan)
+# Query and list all registered characters.
+sub list_allguilds
+{
+    my ($chan) = @_;
+    
+    print "List all guilds:\n";
+    
+    my $regguilds = $dazeus->getProperty("plugins.wow.guildlist");
+    if(!$regguilds) {
+        $dazeus->message($network, $chan, "But there are no guilds registered!");
+        print "invalid (no properties)\n";
+        return;
+    }
+    
+    for(keys %$regguilds)
     {
         print "\t";
         my @subs = split(/\./, $_);
         if(@subs != 2){
             die "Database inconsistency!\n";
         }
-        query_charinfo($chan, $subs[0], $subs[1]);
+        query_guildinfo($chan, $subs[0], $subs[1]);
     }
 }
 
