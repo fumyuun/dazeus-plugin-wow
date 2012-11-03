@@ -31,12 +31,12 @@ if(!$network) {
 my $dazeus = DaZeus->connect($socket);
 $dazeus->subscribe("PRIVMSG", \&message);
 my $wow_api = WoW::Armory::API->new(Region => 'eu', Locale => 'en_GB');
-poll_feeds();
+poll_feeds($network);
 my $last_poll = time();
 while(1) {
     while($dazeus->handleEvent(5)) {}
     if(time() - $last_poll > $POLL_TIME_S) {
-        poll_feeds();
+        poll_feeds($network);
         $last_poll = time();
     }
 }
@@ -100,8 +100,7 @@ sub message
             toggle_feeds($netw, $chan, "off");
         }
         elsif(@cmd == 2 && $cmd[1] eq "queryfeeds"){
-            my $cmap = {$chan => 1};
-            query_feeds($netw, $cmap);
+            poll_feeds($netw);
         }
         else {
             print_help("min", $netw, $chan, @cmd);
@@ -182,7 +181,7 @@ sub query_charinfo
     $char = lc $char;
     $realm = lc $realm;
     
-    print "Query of " . $realm . " - " . $char . "\n";
+    print "Query of " . $realm . "." . $char . "\n";
     my $char_data = $wow_api->GetCharacter($realm, $char);
     # Querying sometimes mysteriously fails, try again.
     my $retries;
@@ -215,7 +214,7 @@ sub query_guildinfo
     $guild =~ s/-/ /g;
     $realm = lc $realm;
     
-    print "Query of guild " . $realm . " - " . $guild . "\n";
+    print "Query of guild " . $realm . "." . $guild . "\n";
     my $guild_data = $wow_api->GetGuild($realm, $guild);
     # Querying sometimes mysteriously fails, try again.
     my $retries;
@@ -245,7 +244,7 @@ sub register_char
     $char = lc $char;
     $realm = lc $realm;
     
-    print "Register attempt " . $realm . " - " . $char . " by " . $nick . ": ";
+    print "Register attempt " . $realm . "." . $char . " by " . $nick . ": ";
     
     my $char_data = $wow_api->GetCharacter($realm, $char);
     # Querying sometimes mysteriously fails, try again.
@@ -294,7 +293,7 @@ sub unregister_char
     $char = lc $char;
     $realm = lc $realm;
     
-    print "Unregister attempt " . $realm . " - " . $char . " by " . $nick . ": ";
+    print "Unregister attempt " . $realm . "." . $char . " by " . $nick . ": ";
     
     my $key = $realm . "." . $char;
     my $regchars = $dazeus->getProperty("plugins.wow.charlist");
@@ -334,7 +333,7 @@ sub register_guild
     $guild =~ s/-/ /g;
     $realm = lc $realm;
     
-    print "Register guild attempt " . $realm . " - " . $guild . " by " . $nick . ": ";
+    print "Register guild attempt " . $realm . "." . $guild . " by " . $nick . ": ";
     
     my $guild_data = $wow_api->GetGuild($realm, $guild);
     # Querying sometimes mysteriously fails, try again.
@@ -384,7 +383,7 @@ sub unregister_guild
     $guild =~ s/-/ /g;
     $realm = lc $realm;
     
-    print "Unregister guild attempt " . $realm . " - " . $guild . " by " . $nick . ": ";
+    print "Unregister guild attempt " . $realm . "." . $guild . " by " . $nick . ": ";
     
     my $key = $realm . "." . $guild;
     my $regguilds = $dazeus->getProperty("plugins.wow.guildlist");
@@ -515,22 +514,40 @@ sub poll_feeds
     my ($netw) = @_;
     my $subs = $dazeus->getProperty("plugins.wow.subscribers");
     print "Poll feeds.\n";
-    query_feeds($netw, $subs);
+    query_charfeeds($netw, $subs);
+    query_guildfeeds($netw, $subs);
 }
 
-# query_feeds(network, channels)
+# query_charfeeds(network, channels)
 # Query feeds of all registered characters and displays changes in the
 # given channels (in the form of a hashmap with channels as keys.).
+sub query_charfeeds
+{
+    query_feeds(@_, "char");
+}
+
+# query_guildfeeds(network, channels)
+# Query feeds of all registered guilds and displays changes in the
+# given channels (in the form of a hashmap with channels as keys.).
+sub query_guildfeeds
+{
+    query_feeds(@_, "guild");
+}
+
+# query_feeds(network, channels, type)
+# Query feeds of all registered characters or guilds and displays changes in the
+# given channels (in the form of a hashmap with channels as keys.).
+# type should either be char or guild.
 sub query_feeds
 {
-    my ($netw, $chan) = @_;
-    print scalar(localtime(time())) . " ** Query feeds to " . Dumper($chan) . "\n";
+    my ($netw, $chan, $type) = @_;
+    print scalar(localtime(time())) . " ** Query " . $type . " feeds to " . Dumper($chan) . "\n";
     
-    my $regchars = $dazeus->getProperty("plugins.wow.charlist");
+    my $regchars = $dazeus->getProperty("plugins.wow." . $type . "list");
     if(!$regchars) {
+        print "plugins.wow." . $type . "list doesnt exist?\n";
         return;
     }
-    
     for(keys %$regchars)
     {
         print "\tQuery " . $_ . ": ";
@@ -540,12 +557,23 @@ sub query_feeds
             die "Database inconsistency!\n";
         }
         
-        my $new_feed = $wow_api->GetCharacter($subs[0], $subs[1], 'feed');
+        my $new_feed;
+        if($type eq "char") {
+            $new_feed = $wow_api->GetCharacter($subs[0], $subs[1], 'feed');
+        }
+        elsif($type eq "guild") {
+            $new_feed = $wow_api->GetGuild($subs[0], $subs[1], 'news');
+        }
         # Querying sometimes mysteriously fails, try again.
         my $retries;
         for($retries = 1; !$new_feed && $retries < $MAX_RETRIES; $retries++) {
             print "Retry (" . $retries . "), ";
-            $new_feed = $wow_api->GetCharacter($subs[0], $subs[1], 'feed');
+            if($type eq "char") {
+                $new_feed = $wow_api->GetCharacter($subs[0], $subs[1], 'feed');
+            }
+            elsif($type eq "guild") {
+                $new_feed = $wow_api->GetGuild($subs[0], $subs[1], 'news');
+            }
         }
         if($retries == $MAX_RETRIES && !$new_feed) {
             print "Failed...\n";
@@ -564,21 +592,21 @@ sub query_feeds
         
         print "tnew: " . $new_feed->{lastModified} . " ";
         
-        my $old_timestamp = $dazeus->getProperty("plugins.wow.charfeed." . $_ . ".timestamp");
-        my $old_level = $dazeus->getProperty("plugins.wow.charfeed." . $_ . ".level");
+        my $old_timestamp = $dazeus->getProperty("plugins.wow." . $type . "feed." . $_ . ".timestamp");
+        my $old_level = $dazeus->getProperty("plugins.wow." . $type . "feed." . $_ . ".level");
         if(!$old_timestamp || !$old_level) {
             print "store.\n";
-            $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".timestamp", $new_feed->{lastModified});
-            $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".level", $new_feed->{level});
+            $dazeus->setProperty("plugins.wow." . $type . "feed." . $_ . ".timestamp", $new_feed->{lastModified});
+            $dazeus->setProperty("plugins.wow." . $type . "feed." . $_ . ".level", $new_feed->{level});
             next;
         }
         print "told: " . $old_timestamp . " ";
         
         if($old_timestamp != $new_feed->{lastModified}) {
             print "update.\n";
-            parse_fdiff($netw, $chan, $old_timestamp, $old_level, $new_feed);
-            $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".timestamp", $new_feed->{lastModified});
-            $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".level", $new_feed->{level});
+            parse_fdiff($netw, $chan, $old_timestamp, $old_level, $new_feed, $type);
+            $dazeus->setProperty("plugins.wow." . $type . "feed." . $_ . ".timestamp", $new_feed->{lastModified});
+            $dazeus->setProperty("plugins.wow." . $type . "feed." . $_ . ".level", $new_feed->{level});
         }
         else {
             print "same.\n";
@@ -592,18 +620,31 @@ sub query_feeds
 # a hashmap with channels as keys).
 sub parse_fdiff
 {
-    my ($netw, $chan, $old_timestamp, $old_level, $new_feed) = @_;
+    my ($netw, $chan, $old_timestamp, $old_level, $new_feed, $type) = @_;
     if($old_level != $new_feed->{level}) {
         for my $channel (keys %$chan) {
                 $dazeus->message($netw, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has leveled up to level " . $new_feed->{level} . "! \\o/");
         }
     }
     my $item;
-    foreach $item (reverse @{$new_feed->{feed}})
+    my @feed;
+    if($type eq "char") {
+        @feed = reverse @{$new_feed->{feed}};
+    }
+    elsif($type eq "guild") {
+        @feed = reverse @{$new_feed->{news}};
+    }
+    foreach $item (@feed)
     {
         if($item->{timestamp} > $old_timestamp) {
             if($item->{type} eq "ACHIEVEMENT") {
                 for my $channel (keys %$chan) {
+                    $dazeus->message($netw, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $item->{achievement}{title} . "]! \\o/");
+                }
+            }
+            if($item->{type} eq "guildAchievement") {
+                for my $channel (keys %$chan) {
+                    print "Say to ". $netw . " ; " . $channel . "\n";
                     $dazeus->message($netw, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $item->{achievement}{title} . "]! \\o/");
                 }
             }
