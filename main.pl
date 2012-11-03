@@ -211,7 +211,7 @@ sub query_charinfo
 sub query_guildinfo
 {
     my ($netw, $chan, $realm, $guild) = @_;
-    $guild =~ s/-/ /g;
+    $guild = lc ~ s/-/ /g;
     $realm = lc $realm;
     
     print "Query of guild " . $realm . "." . $guild . "\n";
@@ -331,6 +331,7 @@ sub register_guild
 {
     my ($netw, $chan, $nick, $realm, $guild) = @_;
     $guild =~ s/-/ /g;
+    $guild = lc $guild;
     $realm = lc $realm;
     
     print "Register guild attempt " . $realm . "." . $guild . " by " . $nick . ": ";
@@ -381,6 +382,7 @@ sub unregister_guild
 {
     my ($netw, $chan, $nick, $realm, $guild) = @_;
     $guild =~ s/-/ /g;
+    $guild = lc $guild;
     $realm = lc $realm;
     
     print "Unregister guild attempt " . $realm . "." . $guild . " by " . $nick . ": ";
@@ -446,7 +448,6 @@ sub list_chars
         $dazeus->message($netw, $chan, "But you don't have any registered characters!");
     }
 }
-
 
 # list_allchars(network, chan)
 # Query and list all registered characters.
