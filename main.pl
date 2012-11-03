@@ -196,13 +196,6 @@ sub unregister_char
     
     print "Unregister attempt " . $realm . " - " . $char . " by " . $nick . ": ";
     
-    my $char_data = $wow_api->GetCharacter($realm, $char);
-    if($char_data->{status} && $char_data->{status} eq "nok") {
-        $dazeus->message($network, $chan, "Unregistring failed: " . $char_data->{reason});
-        print "invalid query\n";
-        return;
-    }
-    
     my $key = $realm . "." . $char;
     my $regchars = $dazeus->getProperty("plugins.wow.charlist");
     if(!$regchars) {
