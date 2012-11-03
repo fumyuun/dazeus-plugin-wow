@@ -185,7 +185,7 @@ sub query_charinfo
     my $char_data = $wow_api->GetCharacter($realm, $char);
     # Querying sometimes mysteriously fails, try again.
     my $retries;
-    for($retries = 1; !$char_data && $retries < $MAX_RETRIES; $retries++) {
+    for($retries = 0; !$char_data && $retries < $MAX_RETRIES; $retries++) {
         print "Retry (" . $retries . "), ";
         $char_data = $wow_api->GetCharacter($realm, $char);
     }
@@ -218,7 +218,7 @@ sub query_guildinfo
     my $guild_data = $wow_api->GetGuild($realm, $guild);
     # Querying sometimes mysteriously fails, try again.
     my $retries;
-    for($retries = 1; !$guild_data && $retries < $MAX_RETRIES; $retries++) {
+    for($retries = 0; !$guild_data && $retries < $MAX_RETRIES; $retries++) {
         print "Retry (" . $retries . "), ";
         $guild_data = $wow_api->GetGuild($realm, $guild);
     }
@@ -249,7 +249,7 @@ sub register_char
     my $char_data = $wow_api->GetCharacter($realm, $char);
     # Querying sometimes mysteriously fails, try again.
     my $retries;
-    for($retries = 1; !$char_data && $retries < $MAX_RETRIES; $retries++) {
+    for($retries = 0; !$char_data && $retries < $MAX_RETRIES; $retries++) {
         print "Retry (" . $retries . "), ";
         $char_data = $wow_api->GetCharacter($realm, $char);
     }
@@ -338,7 +338,7 @@ sub register_guild
     my $guild_data = $wow_api->GetGuild($realm, $guild);
     # Querying sometimes mysteriously fails, try again.
     my $retries;
-    for($retries = 1; !$guild_data && $retries < $MAX_RETRIES; $retries++) {
+    for($retries = 0; !$guild_data && $retries < $MAX_RETRIES; $retries++) {
         print "Retry (" . $retries . "), ";
         $guild_data = $wow_api->GetGuild($realm, $guild);
     }
@@ -438,7 +438,7 @@ sub list_chars
             if(@subs != 2){
                 die "Database inconsistency!\n";
             }
-            query_charinfo($chan, $subs[0], $subs[1]);
+            query_charinfo($netw, $chan, $subs[0], $subs[1]);
             $counter++;
         }
     }
@@ -566,7 +566,7 @@ sub query_feeds
         }
         # Querying sometimes mysteriously fails, try again.
         my $retries;
-        for($retries = 1; !$new_feed && $retries < $MAX_RETRIES; $retries++) {
+        for($retries = 0; !$new_feed && $retries < $MAX_RETRIES; $retries++) {
             print "Retry (" . $retries . "), ";
             if($type eq "char") {
                 $new_feed = $wow_api->GetCharacter($subs[0], $subs[1], 'feed');
