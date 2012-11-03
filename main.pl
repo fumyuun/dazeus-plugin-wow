@@ -167,7 +167,7 @@ sub print_help
         }
     }
     if($full eq "full") {
-        $dazeus->message($network, $chan, "Possible commands are help, register, unregister, gregister, gunregister, subscribe, unsubscribe, query, list and list-all. Type }wow help <command> for more info about a certain command.");
+        $dazeus->message($network, $chan, "Possible commands are help, register, unregister, gregister, gunregister, subscribe, unsubscribe, query, gquery, list, list-all, glist and glist-all. Type }wow help <command> for more info about a certain command.");
     }
     else {
         $dazeus->message($network, $chan, "Type }wow help for usage info.");
