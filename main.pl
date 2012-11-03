@@ -133,11 +133,11 @@ sub print_help
             return;
         }
         elsif($params[2] eq "query"){
-            $dazeus->message($netw, $chan, "query <realm> <character> : Query basic character info. Note that realm name must be lower case and spaces have to be replaced by dashes (-).");
+            $dazeus->message($netw, $chan, "query <realm> <character> : Query basic character info. Note that all spaces have to be replaced by dashes (-).");
             return;
         }
         elsif($params[2] eq "gquery"){
-            $dazeus->message($netw, $chan, "query <realm> <guild> : Query basic guild info. Note that realm name must be lower case, the guild name is case sensitive and all spaces have to be replaced by dashes (-).");
+            $dazeus->message($netw, $chan, "query <realm> <guild> : Query basic guild info. Note that all spaces have to be replaced by dashes (-).");
             return;
         }
         elsif($params[2] eq "list"){
@@ -166,7 +166,7 @@ sub print_help
         }
     }
     if($full eq "full") {
-        $dazeus->message($netw, $chan, "Possible commands are help, register, unregister, gregister, gunregister, subscribe, unsubscribe, query, gquery, list, list-all, glist and glist-all. Type }wow help <command> for more info about a certain command.");
+        $dazeus->message($netw, $chan, "Possible commands are help, register, unregister, gregister, gunregister, subscribe, unsubscribe, query, gquery, list, list-all, glist and glist-all. Type }wow help <command> for more info about a certain command. Character, realm and guildnames are case insensitive, while nicknames are.");
     }
     else {
         $dazeus->message($netw, $chan, "Type }wow help for usage info.");
