@@ -55,56 +55,56 @@ sub message
     if($cmd[0] eq "}wow")
     {
         if(@cmd == 2 && $cmd[1] eq "help"){
-            print_help("full", $chan, @cmd);
+            print_help("full", $netw, $chan, @cmd);
         }
         elsif(@cmd == 4 && $cmd[1] eq "query"){
-            query_charinfo($chan, $cmd[2], $cmd[3]);
+            query_charinfo($netw, $chan, $cmd[2], $cmd[3]);
         }
         elsif(@cmd == 4 && $cmd[1] eq "gquery"){
-            query_guildinfo($chan, $cmd[2], $cmd[3]);
+            query_guildinfo($netw, $chan, $cmd[2], $cmd[3]);
         }
         elsif(@cmd == 4 && $cmd[1] eq "register"){
-            register_char($chan, $nick, $cmd[2], $cmd[3]);
+            register_char($netw, $chan, $nick, $cmd[2], $cmd[3]);
         }
         elsif(@cmd == 4 && $cmd[1] eq "unregister"){
-            unregister_char($chan, $nick, $cmd[2], $cmd[3]);
+            unregister_char($netw, $chan, $nick, $cmd[2], $cmd[3]);
         }
         elsif(@cmd == 4 && $cmd[1] eq "gregister"){
-            register_guild($chan, $nick, $cmd[2], $cmd[3]);
+            register_guild($netw, $chan, $nick, $cmd[2], $cmd[3]);
         }
         elsif(@cmd == 4 && $cmd[1] eq "gunregister"){
-            unregister_guild($chan, $nick, $cmd[2], $cmd[3]);
+            unregister_guild($netw, $chan, $nick, $cmd[2], $cmd[3]);
         }
         elsif(@cmd == 2 && $cmd[1] eq "list"){
-            list_chars($chan, $nick);
+            list_chars($netw, $chan, $nick);
         }
         elsif(@cmd == 3 && $cmd[1] eq "list"){
-            list_chars($chan, $cmd[2]);
+            list_chars($netw, $chan, $cmd[2]);
         }
         elsif(@cmd == 2 && $cmd[1] eq "glist"){
-            list_guilds($chan, $nick);
+            list_guilds($netw, $chan, $nick);
         }
         elsif(@cmd == 3 && $cmd[1] eq "glist"){
-            list_guilds($chan, $cmd[2]);
+            list_guilds($netw, $chan, $cmd[2]);
         }
         elsif(@cmd == 2 && $cmd[1] eq "list-all"){
-            list_allchars($chan);
+            list_allchars($netw, $chan);
         }
         elsif(@cmd == 2 && $cmd[1] eq "glist-all"){
-            list_allguilds($chan);
+            list_allguilds($netw, $chan);
         }
         elsif(@cmd == 2 && $cmd[1] eq "subscribe"){
-            toggle_feeds($chan, "on");
+            toggle_feeds($netw, $chan, "on");
         }
         elsif(@cmd == 2 && $cmd[1] eq "unsubscribe"){
-            toggle_feeds($chan, "off");
+            toggle_feeds($netw, $chan, "off");
         }
         elsif(@cmd == 2 && $cmd[1] eq "queryfeeds"){
             my $cmap = {$chan => 1};
-            query_feeds($cmap);
+            query_feeds($netw, $cmap);
         }
         else {
-            print_help("min", $chan, @cmd);
+            print_help("min", $netw, $chan, @cmd);
         }
     }
 }
@@ -114,71 +114,71 @@ sub message
 # equal to "full".
 sub print_help
 {
-    my ($full, $chan, @params) = @_;
+    my ($full, $netw, $chan, @params) = @_;
     if(@params == 3)
     {
         if($params[2] eq "register"){
-            $dazeus->message($network, $chan, "register <realm> <character> : Register a character on a realm to your current nick.");
+            $dazeus->message($netw, $chan, "register <realm> <character> : Register a character on a realm to your current nick.");
             return;
         }
         if($params[2] eq "unregister"){
-            $dazeus->message($network, $chan, "unregister <realm> <character> : Unregister a character on a realm to your current nick.");
+            $dazeus->message($netw, $chan, "unregister <realm> <character> : Unregister a character on a realm to your current nick.");
             return;
         }
         if($params[2] eq "gregister"){
-            $dazeus->message($network, $chan, "register <realm> <guild> : Register a guild on a realm to your current nick.");
+            $dazeus->message($netw, $chan, "register <realm> <guild> : Register a guild on a realm to your current nick.");
             return;
         }
         if($params[2] eq "gunregister"){
-            $dazeus->message($network, $chan, "unregister <realm> <guild> : Unregister a guild on a realm to your current nick.");
+            $dazeus->message($netw, $chan, "unregister <realm> <guild> : Unregister a guild on a realm to your current nick.");
             return;
         }
         elsif($params[2] eq "query"){
-            $dazeus->message($network, $chan, "query <realm> <character> : Query basic character info. Note that realm name must be lower case and spaces have to be replaced by dashes (-).");
+            $dazeus->message($netw, $chan, "query <realm> <character> : Query basic character info. Note that realm name must be lower case and spaces have to be replaced by dashes (-).");
             return;
         }
         elsif($params[2] eq "gquery"){
-            $dazeus->message($network, $chan, "query <realm> <guild> : Query basic guild info. Note that realm name must be lower case, the guild name is case sensitive and all spaces have to be replaced by dashes (-).");
+            $dazeus->message($netw, $chan, "query <realm> <guild> : Query basic guild info. Note that realm name must be lower case, the guild name is case sensitive and all spaces have to be replaced by dashes (-).");
             return;
         }
         elsif($params[2] eq "list"){
-            $dazeus->message($network, $chan, "list [nickname] : List all registered characters of nickname (or yourself if nickname is not given).");
+            $dazeus->message($netw, $chan, "list [nickname] : List all registered characters of nickname (or yourself if nickname is not given).");
             return;
         }
         elsif($params[2] eq "list-all"){
-            $dazeus->message($network, $chan, "list-all : List all registered characters.");
+            $dazeus->message($netw, $chan, "list-all : List all registered characters.");
             return;
         }
         elsif($params[2] eq "glist"){
-            $dazeus->message($network, $chan, "list [nickname] : List all registered guilds of nickname (or yourself if nickname is not given).");
+            $dazeus->message($netw, $chan, "list [nickname] : List all registered guilds of nickname (or yourself if nickname is not given).");
             return;
         }
         elsif($params[2] eq "glist-all"){
-            $dazeus->message($network, $chan, "glist-all : List all registered guilds.");
+            $dazeus->message($netw, $chan, "glist-all : List all registered guilds.");
             return;
         }
         if($params[2] eq "subscribe"){
-            $dazeus->message($network, $chan, "subscribe : Subscribes the current channel to feed updates.");
+            $dazeus->message($netw, $chan, "subscribe : Subscribes the current channel to feed updates.");
             return;
         }
         if($params[2] eq "unsubscribe"){
-            $dazeus->message($network, $chan, "unsubscribe : Unsubscribes the current channel from feed updates.");
+            $dazeus->message($netw, $chan, "unsubscribe : Unsubscribes the current channel from feed updates.");
             return;
         }
     }
     if($full eq "full") {
-        $dazeus->message($network, $chan, "Possible commands are help, register, unregister, gregister, gunregister, subscribe, unsubscribe, query, gquery, list, list-all, glist and glist-all. Type }wow help <command> for more info about a certain command.");
+        $dazeus->message($netw, $chan, "Possible commands are help, register, unregister, gregister, gunregister, subscribe, unsubscribe, query, gquery, list, list-all, glist and glist-all. Type }wow help <command> for more info about a certain command.");
     }
     else {
-        $dazeus->message($network, $chan, "Type }wow help for usage info.");
+        $dazeus->message($netw, $chan, "Type }wow help for usage info.");
     }
 }
 
-# query_charinfo(channel, realm, character)
+# query_charinfo(network, channel, realm, character)
 # query and display basic character info.
 sub query_charinfo
 {
-    my ($chan, $realm, $char) = @_;
+    my ($netw, $chan, $realm, $char) = @_;
     $char = lc $char;
     $realm = lc $realm;
     
@@ -196,22 +196,22 @@ sub query_charinfo
     }
     
     if($char_data->{status} && $char_data->{status} eq "nok") {
-        $dazeus->message($network, $chan, "Query failed: " . $char_data->{reason});
+        $dazeus->message($netw, $chan, "Query failed: " . $char_data->{reason});
         return;
     }
     
-    $dazeus->message($network, $chan, "[" . $char_data->{level} . "] "
+    $dazeus->message($netw, $chan, "[" . $char_data->{level} . "] "
     . $char_data->{name} .
     " - " . @races[$char_data->{race}] . " "
     . @classes[$char_data->{class}] .
     " - (" . $char_data->{realm} . ")");
 }
 
-# query_guildinfo(channel, realm, guild)
+# query_guildinfo(network, channel, realm, guild)
 # query and display basic guild info.
 sub query_guildinfo
 {
-    my ($chan, $realm, $guild) = @_;
+    my ($netw, $chan, $realm, $guild) = @_;
     $guild =~ s/-/ /g;
     $realm = lc $realm;
     
@@ -229,19 +229,19 @@ sub query_guildinfo
     }
     
     if($guild_data->{status} && $guild_data->{status} eq "nok") {
-        $dazeus->message($network, $chan, "Query failed: " . $guild_data->{reason});
+        $dazeus->message($netw, $chan, "Query failed: " . $guild_data->{reason});
         return;
     }
     
-    $dazeus->message($network, $chan, "[" . $guild_data->{level} . "] "
+    $dazeus->message($netw, $chan, "[" . $guild_data->{level} . "] "
     . $guild_data->{name} . " (" . ($guild_data->{side} == 0 ? "A" : "H") . ")");
 }
 
-# register_char(channel, nick, realm, char)
+# register_char(network, channel, nick, realm, char)
 # Attempts to register a given character on a realm to a nick. 
 sub register_char
 {
-    my ($chan, $nick, $realm, $char) = @_;
+    my ($netw, $chan, $nick, $realm, $char) = @_;
     $char = lc $char;
     $realm = lc $realm;
     
@@ -260,7 +260,7 @@ sub register_char
     }
     
     if($char_data->{status} && $char_data->{status} eq "nok") {
-        $dazeus->message($network, $chan, "Registring failed: " . $char_data->{reason});
+        $dazeus->message($netw, $chan, "Registring failed: " . $char_data->{reason});
         print "invalid query\n";
         return;
     }
@@ -273,7 +273,7 @@ sub register_char
     }
     else {
         if(exists($regchars->{$key})) {
-            $dazeus->message($network, $chan, "This character is already registered to " . $regchars->{$key} . "!");
+            $dazeus->message($netw, $chan, "This character is already registered to " . $regchars->{$key} . "!");
             print "invalid (owner: " . $regchars->{$key} . ")\n";
             return;
         }
@@ -283,14 +283,14 @@ sub register_char
         }
     }
     $dazeus->setProperty("plugins.wow.charlist", $regchars);
-    $dazeus->message($network, $chan, "Character succesfully registered!");
+    $dazeus->message($netw, $chan, "Character succesfully registered!");
 }
 
-# unregister_char(channel, nick, realm, char)
+# unregister_char(network, channel, nick, realm, char)
 # Attempts to unregister a given character on a realm, if it's owned by nick.
 sub unregister_char
 {
-    my ($chan, $nick, $realm, $char) = @_;
+    my ($netw, $chan, $nick, $realm, $char) = @_;
     $char = lc $char;
     $realm = lc $realm;
     
@@ -299,7 +299,7 @@ sub unregister_char
     my $key = $realm . "." . $char;
     my $regchars = $dazeus->getProperty("plugins.wow.charlist");
     if(!$regchars) {
-        $dazeus->message($network, $chan, "But there are no characters registered!");
+        $dazeus->message($netw, $chan, "But there are no characters registered!");
         print "invalid (no properties)\n";
         return;
     }
@@ -310,27 +310,27 @@ sub unregister_char
                 print "ok\n";
             }
             else {
-                $dazeus->message($network, $chan, "But this character isn't yours!");
+                $dazeus->message($netw, $chan, "But this character isn't yours!");
                 print "invalid (owner: " . $regchars->{$key} . ")\n";
                 return;
             }
         }
         else {
-            $dazeus->message($network, $chan, "But this character isn't registered!");
+            $dazeus->message($netw, $chan, "But this character isn't registered!");
             print "invalid (doesn't exist)\n";
             return;
         }
     }
     $dazeus->setProperty("plugins.wow.charlist", $regchars);
-    $dazeus->message($network, $chan, "Character succesfully unregistered!");
+    $dazeus->message($netw, $chan, "Character succesfully unregistered!");
 }
 
-# register_guild(channel, nick, realm, guild)
+# register_guild(network, channel, nick, realm, guild)
 # Attempts to register a given guild on a realm to a nick.
 # Encode spaces in guildnames with dashes (-).
 sub register_guild
 {
-    my ($chan, $nick, $realm, $guild) = @_;
+    my ($netw, $chan, $nick, $realm, $guild) = @_;
     $guild =~ s/-/ /g;
     $realm = lc $realm;
     
@@ -349,7 +349,7 @@ sub register_guild
     }
     
     if($guild_data->{status} && $guild_data->{status} eq "nok") {
-        $dazeus->message($network, $chan, "Registring failed: " . $guild_data->{reason});
+        $dazeus->message($netw, $chan, "Registring failed: " . $guild_data->{reason});
         print "invalid query\n";
         return;
     }
@@ -362,7 +362,7 @@ sub register_guild
     }
     else {
         if(exists($regguilds->{$key})) {
-            $dazeus->message($network, $chan, "This guild is already registered to " . $regguilds->{$key} . "!");
+            $dazeus->message($netw, $chan, "This guild is already registered to " . $regguilds->{$key} . "!");
             print "invalid (owner: " . $regguilds->{$key} . ")\n";
             return;
         }
@@ -372,15 +372,15 @@ sub register_guild
         }
     }
     $dazeus->setProperty("plugins.wow.guildlist", $regguilds);
-    $dazeus->message($network, $chan, "Guild succesfully registered!");
+    $dazeus->message($netw, $chan, "Guild succesfully registered!");
 }
 
-# unregister_guild(channel, nick, realm, guild)
+# unregister_guild(network, channel, nick, realm, guild)
 # Attempts to unregister a given guild on a realm, if it's owned by nick.
 # Encode spaces in guildnames with dashes (-).
 sub unregister_guild
 {
-    my ($chan, $nick, $realm, $guild) = @_;
+    my ($netw, $chan, $nick, $realm, $guild) = @_;
     $guild =~ s/-/ /g;
     $realm = lc $realm;
     
@@ -389,7 +389,7 @@ sub unregister_guild
     my $key = $realm . "." . $guild;
     my $regguilds = $dazeus->getProperty("plugins.wow.guildlist");
     if(!$regguilds) {
-        $dazeus->message($network, $chan, "But there are no guilds registered!");
+        $dazeus->message($netw, $chan, "But there are no guilds registered!");
         print "invalid (no properties)\n";
         return;
     }
@@ -400,32 +400,32 @@ sub unregister_guild
                 print "ok\n";
             }
             else {
-                $dazeus->message($network, $chan, "But this guild isn't yours!");
+                $dazeus->message($netw, $chan, "But this guild isn't yours!");
                 print "invalid (owner: " . $regguilds->{$key} . ")\n";
                 return;
             }
         }
         else {
-            $dazeus->message($network, $chan, "But this guild isn't registered!");
+            $dazeus->message($netw, $chan, "But this guild isn't registered!");
             print "invalid (doesn't exist)\n";
             return;
         }
     }
     $dazeus->setProperty("plugins.wow.guildlist", $regguilds);
-    $dazeus->message($network, $chan, "Guild succesfully unregistered!");
+    $dazeus->message($netw, $chan, "Guild succesfully unregistered!");
 }
 
-# list_chars(chan, nick)
+# list_chars(network, chan, nick)
 # Query and list all characters registered to a given nick.
 sub list_chars
 {
-    my ($chan, $nick) = @_;
+    my ($netw, $chan, $nick) = @_;
     
     print "List chars by " . $nick . ":\n";
     
     my $regchars = $dazeus->getProperty("plugins.wow.charlist");
     if(!$regchars) {
-        $dazeus->message($network, $chan, "But there are no characters registered!");
+        $dazeus->message($netw, $chan, "But there are no characters registered!");
         print "invalid (no properties)\n";
         return;
     }
@@ -444,21 +444,21 @@ sub list_chars
         }
     }
     if($counter == 0){
-        $dazeus->message($network, $chan, "But you don't have any registered characters!");
+        $dazeus->message($netw, $chan, "But you don't have any registered characters!");
     }
 }
 
-# list_guilds(chan, nick)
+# list_guilds(network, chan, nick)
 # Query and list all guilds registered to a given nick.
 sub list_guilds
 {
-    my ($chan, $nick) = @_;
+    my ($netw, $chan, $nick) = @_;
     
     print "List guilds by " . $nick . ":\n";
     
     my $regguilds = $dazeus->getProperty("plugins.wow.guildlist");
     if(!$regguilds) {
-        $dazeus->message($network, $chan, "But there are no guilds registered!");
+        $dazeus->message($netw, $chan, "But there are no guilds registered!");
         print "invalid (no properties)\n";
         return;
     }
@@ -472,27 +472,27 @@ sub list_guilds
             if(@subs != 2){
                 die "Database inconsistency!\n";
             }
-            query_guildinfo($chan, $subs[0], $subs[1]);
+            query_guildinfo($netw, $chan, $subs[0], $subs[1]);
             $counter++;
         }
     }
     if($counter == 0){
-        $dazeus->message($network, $chan, "But you don't have any registered guilds!");
+        $dazeus->message($netw, $chan, "But you don't have any registered guilds!");
     }
 }
 
 
-# list_allguilds(chan)
+# list_allguilds(network, chan)
 # Query and list all registered characters.
 sub list_allguilds
 {
-    my ($chan) = @_;
+    my ($netw, $chan) = @_;
     
     print "List all guilds:\n";
     
     my $regguilds = $dazeus->getProperty("plugins.wow.guildlist");
     if(!$regguilds) {
-        $dazeus->message($network, $chan, "But there are no guilds registered!");
+        $dazeus->message($netw, $chan, "But there are no guilds registered!");
         print "invalid (no properties)\n";
         return;
     }
@@ -504,25 +504,26 @@ sub list_allguilds
         if(@subs != 2){
             die "Database inconsistency!\n";
         }
-        query_guildinfo($chan, $subs[0], $subs[1]);
+        query_guildinfo($netw, $chan, $subs[0], $subs[1]);
     }
 }
 
-# poll_feeds()
+# poll_feeds($netw)
 # Poll all registered feeds to all subscribed channels.
 sub poll_feeds
 {
+    my ($netw) = @_;
     my $subs = $dazeus->getProperty("plugins.wow.subscribers");
     print "Poll feeds.\n";
-    query_feeds($subs);
+    query_feeds($netw, $subs);
 }
 
-# query_feeds(channels)
+# query_feeds(network, channels)
 # Query feeds of all registered characters and displays changes in the
 # given channels (in the form of a hashmap with channels as keys.).
 sub query_feeds
 {
-    my ($chan, undef) = @_;
+    my ($netw, $chan) = @_;
     print scalar(localtime(time())) . " ** Query feeds to " . Dumper($chan) . "\n";
     
     my $regchars = $dazeus->getProperty("plugins.wow.charlist");
@@ -575,7 +576,7 @@ sub query_feeds
         
         if($old_timestamp != $new_feed->{lastModified}) {
             print "update.\n";
-            parse_fdiff($chan, $old_timestamp, $old_level, $new_feed);
+            parse_fdiff($netw, $chan, $old_timestamp, $old_level, $new_feed);
             $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".timestamp", $new_feed->{lastModified});
             $dazeus->setProperty("plugins.wow.charfeed." . $_ . ".level", $new_feed->{level});
         }
@@ -585,17 +586,17 @@ sub query_feeds
     }
 }
 
-# parse_fdfiff(channels, old_timestamp, old_level, new_feed)
+# parse_fdfiff(network, channels, old_timestamp, old_level, new_feed)
 # Parse difference between last seen and current feed, using the old timestamp
 # and level. Will output all changes to the given channels (in the form of
 # a hashmap with channels as keys).
 sub parse_fdiff
 {
-    my ($chan, $old_timestamp, $old_level, $new_feed) = @_;
+    my ($netw, $chan, $old_timestamp, $old_level, $new_feed) = @_;
     if($old_level != $new_feed->{level}) {
-	for my $channel (keys %$chan) {
-        	$dazeus->message($network, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has leveled up to level " . $new_feed->{level} . "! \\o/");
-	}
+        for my $channel (keys %$chan) {
+                $dazeus->message($netw, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has leveled up to level " . $new_feed->{level} . "! \\o/");
+        }
     }
     my $item;
     foreach $item (reverse @{$new_feed->{feed}})
@@ -603,29 +604,29 @@ sub parse_fdiff
         if($item->{timestamp} > $old_timestamp) {
             if($item->{type} eq "ACHIEVEMENT") {
                 for my $channel (keys %$chan) {
-                    $dazeus->message($network, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $item->{achievement}{title} . "]! \\o/");
+                    $dazeus->message($netw, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has gained [" . $item->{achievement}{title} . "]! \\o/");
                 }
             }
             elsif($item->{type} eq "LOOT") {
                 my $itemdat = $wow_api->GetItem($item->{itemId});
                 for my $channel (keys %$chan) {
-                    $dazeus->message($network, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has looted " . $itemdat->{name} . "! \\o/");
+                    $dazeus->message($netw, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has looted " . $itemdat->{name} . "! \\o/");
                 }
             }
             elsif($item->{type} eq "BOSSKILL") {
                 for my $channel (keys %$chan) {
-                    $dazeus->message($network, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has cleared " . $item->{name} . "! \\o/");
+                    $dazeus->message($netw, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has cleared " . $item->{name} . "! \\o/");
                 }
             }
         }
     }
 }
 
-# toggle_feed(channel, "on"/"off")
+# toggle_feed(network, channel, "on"/"off")
 # Subscribe or unsubscribe a channel from feeds.
 sub toggle_feeds
 {
-    my ($chan, $flag) = @_;
+    my ($netw, $chan, $flag) = @_;
     print "Setting feed subscription for " . $chan . " to " . $flag . "\n";
     
     my $subs = $dazeus->getProperty("plugins.wow.subscribers");
@@ -635,21 +636,21 @@ sub toggle_feeds
     
     if($flag eq "on"){
         if(exists($subs->{$chan})){
-            $dazeus->message($network, $chan, "But this channel is already subscribed!");
+            $dazeus->message($netw, $chan, "But this channel is already subscribed!");
             return;
         }
         else {
             $subs->{$chan} = 1;
-            $dazeus->message($network, $chan, "I will subscribe this channel.");
+            $dazeus->message($netw, $chan, "I will subscribe this channel.");
         }
     }
     elsif($flag eq "off"){
         if(exists($subs->{$chan})){
             delete $subs->{$chan};
-            $dazeus->message($network, $chan, "I will unsubscribe this channel.");
+            $dazeus->message($netw, $chan, "I will unsubscribe this channel.");
         }
         else {
-            $dazeus->message($network, $chan, "But this channel is not subscribed!");
+            $dazeus->message($netw, $chan, "But this channel is not subscribed!");
             return;
         }
     }
