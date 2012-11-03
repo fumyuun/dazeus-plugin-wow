@@ -14,6 +14,11 @@ use WoW::Armory::API;
 use Data::Dumper;
 use feature 'say';
 
+# Max retries before giving up a query
+my $MAX_RETRIES = 3;
+# Time inbetween polls (seconds).
+my $POLL_TIME_S = 60;
+
 # Basic strings so we dont have to query the api server every time about these.
 my @classes = ("?", "Warrior", "Paladin", "Hunter", "Rogue", "Priest", "Death Knight", "Shaman", "Mage", "Warlock", "Monk", "Druid", "?");
 my @races = ("?", "Human", "Orc", "Dwarf", "Night Elf", "Undead", "Tauren", "Gnome", "Troll", "Goblin", "Blood Elf", "Draenei", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "Worgen", "?", "Pandaren(N)", "Pandaren(A)", "Pandaren(H)", "?");
@@ -30,7 +35,7 @@ poll_feeds();
 my $last_poll = time();
 while(1) {
     while($dazeus->handleEvent(5)) {}
-    if(time() - $last_poll > 60) {
+    if(time() - $last_poll > $POLL_TIME_S) {
         poll_feeds();
         $last_poll = time();
     }
@@ -60,6 +65,12 @@ sub message
         }
         elsif(@cmd == 4 && $cmd[1] eq "unregister"){
             unregister_char($chan, $nick, $cmd[2], $cmd[3]);
+        }
+        elsif(@cmd == 4 && $cmd[1] eq "gregister"){
+            register_guild($chan, $nick, $cmd[2], $cmd[3]);
+        }
+        elsif(@cmd == 4 && $cmd[1] eq "gunregister"){
+            unregister_guild($chan, $nick, $cmd[2], $cmd[3]);
         }
         elsif(@cmd == 2 && $cmd[1] eq "list"){
             list_chars($chan, $nick);
@@ -102,6 +113,14 @@ sub print_help
             $dazeus->message($network, $chan, "unregister <realm> <character> : Unregister a character on a realm to your current nick.");
             return;
         }
+        if($params[2] eq "gregister"){
+            $dazeus->message($network, $chan, "register <realm> <guild> : Register a guild on a realm to your current nick.");
+            return;
+        }
+        if($params[2] eq "gunregister"){
+            $dazeus->message($network, $chan, "unregister <realm> <guild> : Unregister a guild on a realm to your current nick.");
+            return;
+        }
         elsif($params[2] eq "query"){
             $dazeus->message($network, $chan, "query <realm> <character> : Query basic character info. Note that realm name must be lower case and spaces have to be replaced by dashes (-).");
             return;
@@ -124,7 +143,7 @@ sub print_help
         }
     }
     if($full eq "full") {
-        $dazeus->message($network, $chan, "Possible commands are help, register, unregister, subscribe, unsubscribe, query, list and list-all. Type }wow help <command> for more info about a certain command.");
+        $dazeus->message($network, $chan, "Possible commands are help, register, unregister, gregister, gunregister, subscribe, unsubscribe, query, list and list-all. Type }wow help <command> for more info about a certain command.");
     }
     else {
         $dazeus->message($network, $chan, "Type }wow help for usage info.");
@@ -139,8 +158,14 @@ sub query_charinfo
     print "Query of " . $realm . " - " . $char . "\n";
     my $char_data = $wow_api->GetCharacter($realm, $char);
     # Querying sometimes mysteriously fails, try again.
-    while(!$char_data) {
+    my $retries;
+    for(my $retries = 0; !$char_data && $retries < $MAX_RETRIES; $retries++) {
+        print "Retry (" . $retries . "), ";
         $char_data = $wow_api->GetCharacter($realm, $char);
+    }
+    if($retries == $MAX_RETRIES && !$char_data) {
+        print "Failed...\n";
+        return;
     }
     
     if($char_data->{status} && $char_data->{status} eq "nok") {
@@ -167,8 +192,14 @@ sub register_char
     
     my $char_data = $wow_api->GetCharacter($realm, $char);
     # Querying sometimes mysteriously fails, try again.
-    while(!$char_data) {
+    my $retries;
+    for($retries = 1; !$char_data && $retries < $MAX_RETRIES; $retries++) {
+        print "Retry (" . $retries . "), ";
         $char_data = $wow_api->GetCharacter($realm, $char);
+    }
+    if($retries == $MAX_RETRIES && !$char_data) {
+        print "Failed...\n";
+        return;
     }
     
     if($char_data->{status} && $char_data->{status} eq "nok") {
@@ -235,6 +266,96 @@ sub unregister_char
     }
     $dazeus->setProperty("plugins.wow.charlist", $regchars);
     $dazeus->message($network, $chan, "Character succesfully unregistered!");
+}
+
+# register_guild(channel, nick, realm, guild)
+# Attempts to register a given guild on a realm to a nick.
+# Encode spaces in guildnames with dashes (-).
+sub register_guild
+{
+    my ($chan, $nick, $realm, $guild) = @_;
+    $guild =~ s/-/ /g;
+    $realm = lc $realm;
+    
+    print "Register guild attempt " . $realm . " - " . $guild . " by " . $nick . ": ";
+    
+    my $guild_data = $wow_api->GetGuild($realm, $guild);
+    # Querying sometimes mysteriously fails, try again.
+    my $retries;
+    for($retries = 1; !$guild_data && $retries < $MAX_RETRIES; $retries++) {
+        print "Retry (" . $retries . "), ";
+        $guild_data = $wow_api->GetGuild($realm, $guild);
+    }
+    if($retries == $MAX_RETRIES && !$guild_data) {
+        print "Failed... \n";
+        return;
+    }
+    
+    if($guild_data->{status} && $guild_data->{status} eq "nok") {
+        $dazeus->message($network, $chan, "Registring failed: " . $guild_data->{reason});
+        print "invalid query\n";
+        return;
+    }
+    
+    my $key = $realm . "." . $guild;
+    my $regguilds = $dazeus->getProperty("plugins.wow.guildlist");
+    if(!$regguilds) {
+        $regguilds = {$key => $nick};
+        print "creating new property plugins.wow.guildlist... \n";
+    }
+    else {
+        if(exists($regguilds->{$key})) {
+            $dazeus->message($network, $chan, "This guild is already registered to " . $regguilds->{$key} . "!");
+            print "invalid (owner: " . $regguilds->{$key} . ")\n";
+            return;
+        }
+        else {
+            $regguilds->{$key} = $nick;
+            print "ok\n";
+        }
+    }
+    $dazeus->setProperty("plugins.wow.guildlist", $regguilds);
+    $dazeus->message($network, $chan, "Guild succesfully registered!");
+}
+
+# unregister_guild(channel, nick, realm, guild)
+# Attempts to unregister a given guild on a realm, if it's owned by nick.
+# Encode spaces in guildnames with dashes (-).
+sub unregister_guild
+{
+    my ($chan, $nick, $realm, $guild) = @_;
+    $guild =~ s/-/ /g;
+    $realm = lc $realm;
+    
+    print "Unregister guild attempt " . $realm . " - " . $guild . " by " . $nick . ": ";
+    
+    my $key = $realm . "." . $guild;
+    my $regguilds = $dazeus->getProperty("plugins.wow.guildlist");
+    if(!$regguilds) {
+        $dazeus->message($network, $chan, "But there are no guilds registered!");
+        print "invalid (no properties)\n";
+        return;
+    }
+    else {
+        if(exists($regguilds->{$key})) {
+            if($regguilds->{$key} eq $nick) {
+                delete $regguilds->{$key};
+                print "ok\n";
+            }
+            else {
+                $dazeus->message($network, $chan, "But this guild isn't yours!");
+                print "invalid (owner: " . $regguilds->{$key} . ")\n";
+                return;
+            }
+        }
+        else {
+            $dazeus->message($network, $chan, "But this guild isn't registered!");
+            print "invalid (doesn't exist)\n";
+            return;
+        }
+    }
+    $dazeus->setProperty("plugins.wow.guildlist", $regguilds);
+    $dazeus->message($network, $chan, "Guild succesfully unregistered!");
 }
 
 # list_chars(chan, nick)
@@ -329,9 +450,16 @@ sub query_feeds
         
         my $new_feed = $wow_api->GetCharacter($subs[0], $subs[1], 'feed');
         # Querying sometimes mysteriously fails, try again.
-        while(!$new_feed) {
+        my $retries;
+        for($retries = 1; !$new_feed && $retries < $MAX_RETRIES; $retries++) {
+            print "Retry (" . $retries . "), ";
             $new_feed = $wow_api->GetCharacter($subs[0], $subs[1], 'feed');
         }
+        if($retries == $MAX_RETRIES && !$new_feed) {
+            print "Failed...\n";
+            next;
+        }
+        
         
         if($new_feed->{status} && $new_feed->{status} eq "nok") {
             print "Query failed: " . $new_feed->{reason};
