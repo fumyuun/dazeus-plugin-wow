@@ -131,11 +131,11 @@ sub query_charinfo
     my ($chan, $realm, $char) = @_;
     print "Query of " . $realm . " - " . $char . "\n";
     my $char_data = $wow_api->GetCharacter($realm, $char);
-    
-    if(!$char_data) {
-        $dazeus->message($network, $chan, "Query failed?");
-        return;
+    # Querying sometimes mysteriously fails, try again.
+    while(!$char_data) {
+        $char_data = $wow_api->GetCharacter($realm, $char);
     }
+    
     if($char_data->{status} && $char_data->{status} eq "nok") {
         $dazeus->message($network, $chan, "Query failed: " . $char_data->{reason});
         return;
@@ -159,6 +159,11 @@ sub register_char
     print "Register attempt " . $realm . " - " . $char . " by " . $nick . ": ";
     
     my $char_data = $wow_api->GetCharacter($realm, $char);
+    # Querying sometimes mysteriously fails, try again.
+    while(!$char_data) {
+        $char_data = $wow_api->GetCharacter($realm, $char);
+    }
+    
     if($char_data->{status} && $char_data->{status} eq "nok") {
         $dazeus->message($network, $chan, "Registring failed: " . $char_data->{reason});
         print "invalid query\n";
@@ -290,10 +295,11 @@ sub query_feeds
         }
         
         my $new_feed = $wow_api->GetCharacter($subs[0], $subs[1], 'feed');
-        if(!$new_feed) {
-            print "Query failed?\n";
-            next;
+        # Querying sometimes mysteriously fails, try again.
+        while(!$new_feed) {
+            $new_feed = $wow_api->GetCharacter($subs[0], $subs[1], 'feed');
         }
+        
         if($new_feed->{status} && $new_feed->{status} eq "nok") {
             print "Query failed: " . $new_feed->{reason};
             next;
