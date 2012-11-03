@@ -30,7 +30,7 @@ poll_feeds();
 my $last_poll = time();
 while(1) {
     while($dazeus->handleEvent(5)) {}
-    if(time() - $last_poll > 300) {
+    if(time() - $last_poll > 60) {
         poll_feeds();
         $last_poll = time();
     }
