@@ -211,7 +211,8 @@ sub query_charinfo
 sub query_guildinfo
 {
     my ($netw, $chan, $realm, $guild) = @_;
-    $guild = lc ~ s/-/ /g;
+    $guild =~ s/-/ /g;
+    $guild = lc $guild;
     $realm = lc $realm;
     
     print "Query of guild " . $realm . "." . $guild . "\n";
