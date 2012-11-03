@@ -185,7 +185,7 @@ sub query_charinfo
     my $char_data = $wow_api->GetCharacter($realm, $char);
     # Querying sometimes mysteriously fails, try again.
     my $retries;
-    for(my $retries = 0; !$char_data && $retries < $MAX_RETRIES; $retries++) {
+    for($retries = 1; !$char_data && $retries < $MAX_RETRIES; $retries++) {
         print "Retry (" . $retries . "), ";
         $char_data = $wow_api->GetCharacter($realm, $char);
     }
@@ -218,7 +218,7 @@ sub query_guildinfo
     my $guild_data = $wow_api->GetGuild($realm, $guild);
     # Querying sometimes mysteriously fails, try again.
     my $retries;
-    for($retries = 0; !$guild_data && $retries < $MAX_RETRIES; $retries++) {
+    for($retries = 1; !$guild_data && $retries < $MAX_RETRIES; $retries++) {
         print "Retry (" . $retries . "), ";
         $guild_data = $wow_api->GetGuild($realm, $guild);
     }
