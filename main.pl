@@ -67,6 +67,9 @@ sub message
         elsif(@cmd == 3 && $cmd[1] eq "list"){
             list_chars($chan, $cmd[2]);
         }
+        elsif(@cmd == 2 && $cmd[1] eq "list-all"){
+            list_allchars($chan);
+        }
         elsif(@cmd == 2 && $cmd[1] eq "subscribe"){
             toggle_feeds($chan, "on");
         }
@@ -107,6 +110,10 @@ sub print_help
             $dazeus->message($network, $chan, "list [nickname] : List all registered characters of nickname (or yourself if nickname is not given).");
             return;
         }
+        elsif($params[2] eq "list-all"){
+            $dazeus->message($network, $chan, "list-all : List all registered characters.");
+            return;
+        }
         if($params[2] eq "subscribe"){
             $dazeus->message($network, $chan, "subscribe : Subscribes the current channel to feed updates.");
             return;
@@ -117,7 +124,7 @@ sub print_help
         }
     }
     if($full eq "full") {
-        $dazeus->message($network, $chan, "Possible commands are help, register, unregister, subscribe, unsubscribe, query and list. Type }wow help <command> for more info about a certain command.");
+        $dazeus->message($network, $chan, "Possible commands are help, register, unregister, subscribe, unsubscribe, query, list and list-all. Type }wow help <command> for more info about a certain command.");
     }
     else {
         $dazeus->message($network, $chan, "Type }wow help for usage info.");
@@ -260,6 +267,32 @@ sub list_chars
     }
     if($counter == 0){
         $dazeus->message($network, $chan, "But you don't have any registered characters!");
+    }
+}
+
+# list_allchars(chan)
+# Query and list all registered characters.
+sub list_allchars
+{
+    my ($chan) = @_;
+    
+    print "List all chars:\n";
+    
+    my $regchars = $dazeus->getProperty("plugins.wow.charlist");
+    if(!$regchars) {
+        $dazeus->message($network, $chan, "But there are no characters registered!");
+        print "invalid (no properties)\n";
+        return;
+    }
+    
+    for(keys %$regchars)
+    {
+        print "\t";
+        my @subs = split(/\./, $_);
+        if(@subs != 2){
+            die "Database inconsistency!\n";
+        }
+        query_charinfo($chan, $subs[0], $subs[1]);
     }
 }
 
