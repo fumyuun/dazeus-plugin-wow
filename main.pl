@@ -447,6 +447,33 @@ sub list_chars
     }
 }
 
+
+# list_allchars(network, chan)
+# Query and list all registered characters.
+sub list_allchars
+{
+    my ($netw, $chan) = @_;
+    
+    print "List all characters:\n";
+    
+    my $regchars = $dazeus->getProperty("plugins.wow.charlist");
+    if(!$regchars) {
+        $dazeus->message($netw, $chan, "But there are no characters registered!");
+        print "invalid (no properties)\n";
+        return;
+    }
+    
+    for(keys %$regchars)
+    {
+        print "\t";
+        my @subs = split(/\./, $_);
+        if(@subs != 2){
+            die "Database inconsistency!\n";
+        }
+        query_charinfo($netw, $chan, $subs[0], $subs[1]);
+    }
+}
+
 # list_guilds(network, chan, nick)
 # Query and list all guilds registered to a given nick.
 sub list_guilds
@@ -482,7 +509,7 @@ sub list_guilds
 
 
 # list_allguilds(network, chan)
-# Query and list all registered characters.
+# Query and list all registered guilds.
 sub list_allguilds
 {
     my ($netw, $chan) = @_;
