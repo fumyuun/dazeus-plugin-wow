@@ -347,7 +347,7 @@ sub parse_fdiff
 	}
     }
     my $item;
-    foreach $item (@{$new_feed->{feed}})
+    foreach $item (reverse @{$new_feed->{feed}})
     {
         if($item->{timestamp} > $old_timestamp) {
             if($item->{type} eq "ACHIEVEMENT") {
