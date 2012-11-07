@@ -173,13 +173,16 @@ sub print_help
     }
 }
 
-# query_charinfo(network, channel, realm, character)
-# query and display basic character info.
+# query_charinfo(network, channel, realm, character, owner)
+# query and display basic character info. Owner is optional.
 sub query_charinfo
 {
-    my ($netw, $chan, $realm, $char) = @_;
+    my ($netw, $chan, $realm, $char, $nick) = @_;
     $char = lc $char;
     $realm = lc $realm;
+    if($nick){
+        $nick =~ s/^(.)(.)/$1~$2/;
+    }
     
     print "Query of " . $realm . "." . $char . "\n";
     my $char_data = $wow_api->GetCharacter($realm, $char);
@@ -199,11 +202,17 @@ sub query_charinfo
         return;
     }
     
-    $dazeus->message($netw, $chan, "[" . $char_data->{level} . "] "
+    my $output =
+    "[" . $char_data->{level} . "] "
     . $char_data->{name} .
-    " - " . @races[$char_data->{race}] . " "
+    " " . @races[$char_data->{race}] . " "
     . @classes[$char_data->{class}] .
-    " - (" . $char_data->{realm} . ")");
+    " (" . $char_data->{realm} . ")";
+    
+    if($nick) {
+        $output = $output . " <" . $nick . ">";
+    }
+    $dazeus->message($netw, $chan, $output);
 }
 
 # query_guildinfo(network, channel, realm, guild)
@@ -441,7 +450,7 @@ sub list_chars
             if(@subs != 2){
                 die "Database inconsistency!\n";
             }
-            query_charinfo($netw, $chan, $subs[0], $subs[1]);
+            query_charinfo($netw, $chan, $subs[0], $subs[1], $regchars->{$_});
             $counter++;
         }
     }
@@ -472,7 +481,7 @@ sub list_allchars
         if(@subs != 2){
             die "Database inconsistency!\n";
         }
-        query_charinfo($netw, $chan, $subs[0], $subs[1]);
+        query_charinfo($netw, $chan, $subs[0], $subs[1], $regchars->{$_});
     }
 }
 
