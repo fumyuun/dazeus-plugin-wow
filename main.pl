@@ -688,6 +688,12 @@ sub parse_fdiff
             }
             elsif($item->{type} eq "LOOT") {
                 my $itemdat = $wow_api->GetItem($item->{itemId});
+                if (!$itemdat || !exists($itemdat->{name})) {
+                    print "An item without name was looted: \n";
+                    Dumper($item);
+                    Dumper($itemdat);
+                    $itemdat = {"name" => "something lost in space and time"};
+                }
                 for my $channel (keys %$chan) {
                     $dazeus->message($netw, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has looted " . $itemdat->{name} . "! \\o/");
                 }
