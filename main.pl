@@ -690,8 +690,8 @@ sub parse_fdiff
                 my $itemdat = $wow_api->GetItem($item->{itemId});
                 if (!$itemdat || !exists($itemdat->{name})) {
                     print "An item without name was looted: \n";
-                    Dumper($item);
-                    Dumper($itemdat);
+                    print Dumper($item);
+                    print Dumper($itemdat);
                     $itemdat = {"name" => "something lost in space and time"};
                 }
                 for my $channel (keys %$chan) {
@@ -701,7 +701,7 @@ sub parse_fdiff
             elsif($item->{type} eq "BOSSKILL") {
                 if (!exists($item->{name})) {
                     print "A boss without name was killed: \n";
-                    Dumper($item);
+                    print Dumper($item);
                     $item->{name} = "something lost in space and time";
                 }
                 for my $channel (keys %$chan) {
