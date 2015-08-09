@@ -699,6 +699,11 @@ sub parse_fdiff
                 }
             }
             elsif($item->{type} eq "BOSSKILL") {
+                if (!exists($item->{name})) {
+                    print "A boss without name was killed: \n";
+                    Dumper($item);
+                    $item->{name} = "something lost in space and time";
+                }
                 for my $channel (keys %$chan) {
                     $dazeus->message($netw, $channel, $new_feed->{name} . " (" . $new_feed->{realm} . ") has cleared " . $item->{name} . "! \\o/");
                 }
